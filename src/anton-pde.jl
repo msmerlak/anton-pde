@@ -1,8 +1,8 @@
-using ModelingToolkit, DiffEqOperators, DifferentialEquations
+using ModelingToolkit, DiffEqOperators, DifferentialEquations, DomainSets
 #using ModelingToolkit: Differential
-import ModelingToolkit: Interval, infimum, supremum
-using SpecialFunctions, QuadGK
-using Plots
+#import ModelingToolkit: Interval, infimum, supremum
+using SpecialFunctions, QuadGK, Cubature
+
 
 using DrWatson
 
@@ -20,13 +20,18 @@ v(α) = 2 * cot(2π * α)
 eq(α) = Dt(w(t, x, y)) ~ Dxx(w(t, x, y)) + Dyy(w(t, x, y)) + heaviside(w(t,x,y) - α)* δ(y) - w(t, x, y) - v(α) * Dx(w(t, x, y)) 
 
 sigmoid(x) = 1/(1+exp(-x))
-function exact_sol(x,y; α = .4)
-       return quadgk(ξ -> (1/2π)*besselk(0, sqrt((x+ξ)^2 + y^2)*sqrt(1+v(α)^2/4))*exp(-v(α)*(x+ξ)/2), 0, Inf)
+
+function integrand(x, y, ξ, α)
+       return (1/2π)*besselk(0, sqrt((x+ξ)^2 + y^2)*sqrt(1+v(α)^2/4))*exp(-v(α)*(x+ξ)/2)
 end
 
-exact_sol(1,0)
 
-function solver(α, p)
+function exact_sol(x,y ; α = .4)
+       integral, error = quadgk(ξ -> integrand(x, y, ξ, α), 0, 100, rtol = 1e-4)
+       return integral
+end
+
+function solver(p; α = .4)
        # Initial and boundary conditions
        L = p[:L]
        bcs = [w(t, L, y) ~ 0.,# for all t > 0
@@ -55,18 +60,3 @@ function solver(α, p)
        xs, ys = [infimum(d.domain):dx:supremum(d.domain) for d in domains[2:end]]
        return (x = xs, y = ys, w = map(s -> transpose(reshape(s, (length(xs)-2, length(ys)-2))), sol.u), t = sol.t)
 end
-
-sol = solver(.4, Dict(
-                     :L => 10.,
-                     :T => 100.,
-                     :dx => 1.
-                     )
-              )
-
-
-
-anim = @animate for i = 1:length(sol.w)
-       t = sol.t[i]
-       contourf(sol.w[i], aspect_ratio = 1, ylims = (7,13), title = "t = $t")
-end
-gif(anim, plotsdir("traveling-wave.gif"))
