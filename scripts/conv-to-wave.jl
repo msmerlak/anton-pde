@@ -1,28 +1,34 @@
 using DrWatson
-using Plots
+@quickactivate
+
 include(srcdir("anton-pde.jl"))
-
-p = Dict(
-    :L => 10.,
-    :T => 100.,
-    :dx => 1.
-    ) 
-
-sol = solver(p)
+include(srcdir("plotting.jl"))
 
 
-ex = plot(sol.x, sol.y, (x, y) -> exact_sol(x, y), linetype = :contourf, title = "exact")
+dx = 0.05
+dy = 0.05
+Lx = 5
+Ly = 5
+X, Y = (-Lx:dx:Lx, -Ly:dx:Ly)
 
-num = @animate for i = 1:length(sol.w)
-    t = sol.t[i]
-    plot(ex,
-    contourf(sol.w[i], aspect_ratio = 1, title = "numerical, t = $t")
+trange = (0., 10.)
+
+jac_prototype = L(X,Y)
+p = P(X, Y, .1)
+
+u0 = vec([initial_condition(x, y) for x in X, y in Y])
+
+prob = ODEProblem(
+    ODEFunction(f!, jac_prototype = L(X,Y)), 
+    u0, 
+    trange, p
     )
+
+sol = solve(prob, BS3())
+
+@gif for i in 1:40:length(sol.t)
+    heatmap(X, Y, transpose(sol.u[i]), title = "t = $(sol.t[i])", clims = (0, 1))
 end
 
-contourf(sol.w[i], aspect_ratio = 1, title = "numerical, t = $t")
-gif(num, plotsdir("traveling-wave.gif"))
 
-
-contours(sol.x, sol.y, sol.w[1])
-
+plot_sol(sol, X, Y)
