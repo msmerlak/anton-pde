@@ -5,9 +5,10 @@ using QuadGK, SpecialFunctions
 using LinearAlgebra, SparseArrays
 
 
-heaviside(x) = 0.5 * (sign(x) + 1)
 v(α) = 2 * cot(2π * α)
 δ(x, X) = x == 0. ? 1/X.step.hi : 0.
+θ(x; β = 20) = 1/(1+exp(-β*x))
+
 
 ## exact solution
 
@@ -51,19 +52,20 @@ function L(X, Y, α = 0.1)
 end
 
 function S(X, Y)
-    return vec(transpose(reduce(hcat, fill(map(δ, Y), length(X)))))
+    return vec(transpose(reduce(hcat, fill(map(y->δ(y, Y), Y), length(X)))))
 end
 
-P(X, Y, α) = Dict(
-    :α => α, 
-    :L => L(X, Y, α),
-    :S => S(X,Y)
+P(X, Y, α, β) = Dict(
+    :α => α, # threshold
+    :β => β, # steepness parameter
+    :L => L(X, Y, α), # linear operator
+    :S => S(X,Y) # sources
 )
 
 function f!(du, u, p, t)
-    @unpack α, L, S = p
+    @unpack α, β, L, S = p
     mul!(du, L, u)
-    @. du[u .> α] += S[u .> α]
+    @. du += θ(u - α; β = β)*S
 end
 
 function f(u, p)

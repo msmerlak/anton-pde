@@ -5,8 +5,8 @@ include(srcdir("anton-pde.jl"))
 include(srcdir("plotting.jl"))
 
 
-dx = 0.05
-dy = 0.05
+dx = 0.1
+dy = 0.5
 Lx = 5
 Ly = 5
 X, Y = (-Lx:dx:Lx, -Ly:dx:Ly)
@@ -14,7 +14,7 @@ X, Y = (-Lx:dx:Lx, -Ly:dx:Ly)
 trange = (0., 10.)
 
 jac_prototype = L(X,Y)
-p = P(X, Y, .1)
+p = P(X, Y, .1, 30)
 
 u0 = vec([initial_condition(x, y) for x in X, y in Y])
 
@@ -27,8 +27,5 @@ prob = ODEProblem(
 sol = solve(prob, BS3())
 
 @gif for i in 1:40:length(sol.t)
-    heatmap(X, Y, transpose(sol.u[i]), title = "t = $(sol.t[i])", clims = (0, 1))
+    heatmap(X, Y, transpose(sol.u[i]), title = "t = $(sol.t[i])", clims = (0, .5))
 end
-
-
-plot_sol(sol, X, Y)
