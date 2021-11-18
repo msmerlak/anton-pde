@@ -5,7 +5,6 @@ using QuadGK, SpecialFunctions
 using LinearAlgebra, SparseArrays
 
 
-
 heaviside(x) = 0.5 * (sign(x) + 1)
 v(α) = 2 * cot(2π * α)
 δ(x, X) = x == 0. ? 1/X.step.hi : 0.
@@ -48,7 +47,7 @@ end
 
 
 function L(X, Y, α = 0.1)
-    return Δ(X, Y) - I + v(α).* ∂x(X, Y)
+    return Δ(X, Y) - I + v(α) .* ∂x(X, Y)
 end
 
 function S(X, Y)
